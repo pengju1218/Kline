@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="KeyTextStyle">
+        <attr name="key_name_Color" format="color" />
+        <attr name="key_name_Size" format="dimension" />
+        <attr name="key_value_Color" format="color" />
+        <attr name="key_value_Size" format="dimension" />
+        <attr name="key_name" format="string" />
+        <attr name="key_value" format="string" />
+    </declare-styleable>
+
+
+
+</resources>
