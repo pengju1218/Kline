@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.os.Handler;
+import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -13,7 +14,9 @@ import com.csdn.kline.R;
 import com.csdn.kline.util.DataParse;
 import com.csdn.kline.util.KLineBean;
 import com.csdn.kline.util.MyUtils;
+import com.csdn.kline.util.VolFormatter;
 import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.XAxis;
@@ -42,8 +45,7 @@ import java.util.List;
  */
 
 public class MaloCombinedChart extends CombinedChart implements OnChartValueSelectedListener, View.OnLongClickListener {
-    private XAxis xAxisK;
-    private YAxis axisLeftK, axisRightK;
+
     float sum = 0;
     private ArrayList<KLineBean> kLineDatas;
 
@@ -61,11 +63,6 @@ public class MaloCombinedChart extends CombinedChart implements OnChartValueSele
         super(context, attrs, defStyle);
         initChart();
     }
-
-
-    private Handler handler = new Handler() {
-
-    };
 
 
     public void initChart() {
@@ -106,11 +103,259 @@ public class MaloCombinedChart extends CombinedChart implements OnChartValueSele
 
     }
 
-    public void setData(DataParse mData) {
+
+    /**
+     * 联动的表格
+     *
+     * @param mData    数据
+     * @param barChart 交易量表
+     */
+    public void setAllData(DataParse mData, MaloBarChart barChart) {
+        this.barChart = barChart;
+
+
+        barChart.setDrawBorders(true);
+        barChart.setBorderWidth(1);
+        barChart.setBorderColor(getResources().getColor(R.color.minute_grayLine));
+        barChart.setDescription("");
+        barChart.setDragEnabled(true);
+        barChart.setScaleYEnabled(false);
+
+        Legend barChartLegend = barChart.getLegend();
+        barChartLegend.setEnabled(false);
+
+        //BarYAxisFormatter  barYAxisFormatter=new BarYAxisFormatter();
+        //bar x y轴
+        XAxis xAxisBar = barChart.getXAxis();
+        xAxisBar.setDrawLabels(true);
+        xAxisBar.setDrawGridLines(false);
+        xAxisBar.setDrawAxisLine(false);
+        xAxisBar.setTextColor(getResources().getColor(R.color.minute_zhoutv));
+        xAxisBar.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxisBar.setGridColor(getResources().getColor(R.color.minute_grayLine));
+
+        YAxis axisLeftBar = barChart.getAxisLeft();
+        axisLeftBar.setAxisMinValue(0);
+        axisLeftBar.setDrawGridLines(false);
+        axisLeftBar.setDrawAxisLine(false);
+        axisLeftBar.setTextColor(getResources().getColor(R.color.minute_zhoutv));
+        axisLeftBar.setDrawLabels(true);
+        axisLeftBar.setSpaceTop(0);
+        axisLeftBar.setShowOnlyMinMax(true);
+
+        YAxis axisRightBar = barChart.getAxisRight();
+        axisRightBar.setDrawLabels(false);
+        axisRightBar.setDrawGridLines(false);
+        axisRightBar.setDrawAxisLine(false);
+        /****************************************************************/
+        this.setDrawBorders(true);
+        this.setBorderWidth(1);
+        this.setBorderColor(getResources().getColor(R.color.minute_grayLine));
+        this.setDescription("");
+        this.setDragEnabled(true);
+        this.setScaleYEnabled(false);
+
+        Legend combinedchartLegend = this.getLegend();
+        combinedchartLegend.setEnabled(false);
+        //bar x y轴
+        XAxis xAxisK = this.getXAxis();
+        xAxisK.setDrawLabels(true);
+        xAxisK.setDrawGridLines(false);
+        xAxisK.setDrawAxisLine(false);
+        xAxisK.setTextColor(getResources().getColor(R.color.minute_zhoutv));
+        xAxisK.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxisK.setGridColor(getResources().getColor(R.color.minute_grayLine));
+
+        YAxis axisLeftK = this.getAxisLeft();
+        axisLeftK.setDrawGridLines(true);
+        axisLeftK.setDrawAxisLine(false);
+        axisLeftK.setDrawLabels(true);
+        axisLeftK.setTextColor(getResources().getColor(R.color.minute_zhoutv));
+        axisLeftK.setGridColor(getResources().getColor(R.color.minute_grayLine));
+        axisLeftK.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+
+        YAxis axisRightK = this.getAxisRight();
+        axisRightK.setDrawLabels(false);
+        axisRightK.setDrawGridLines(true);
+        axisRightK.setDrawAxisLine(false);
+        axisRightK.setGridColor(getResources().getColor(R.color.minute_grayLine));
+
+        this.setDragDecelerationEnabled(true);
+        barChart.setDragDecelerationEnabled(true);
+        this.setDragDecelerationFrictionCoef(0.2f);
+        barChart.setDragDecelerationFrictionCoef(0.2f);
+
+
+        kLineDatas = mData.getKLineDatas();
+        axisLeftBar.setAxisMaxValue(mData.getVolmax());
+        String unit = MyUtils.getVolUnit(mData.getVolmax());
+        int u = 1;
+        if ("万手".equals(unit)) {
+            u = 4;
+        } else if ("亿手".equals(unit)) {
+            u = 8;
+        }
+        axisLeftBar.setValueFormatter(new VolFormatter((int) Math.pow(10, u)));
+        axisRightBar.setAxisMaxValue(mData.getVolmax());
+        Log.e("@@@", mData.getVolmax() + "da");
+
+        ArrayList<String> xVals = new ArrayList<>();
+        ArrayList<BarEntry> barEntries = new ArrayList<>();
+        ArrayList<CandleEntry> candleEntries = new ArrayList<>();
+        ArrayList<Entry> line5Entries = new ArrayList<>();
+        ArrayList<Entry> line10Entries = new ArrayList<>();
+        ArrayList<Entry> line30Entries = new ArrayList<>();
+        for (int i = 0, j = 0; i < mData.getKLineDatas().size(); i++, j++) {
+            xVals.add(mData.getKLineDatas().get(i).date + "");
+            barEntries.add(new BarEntry(mData.getKLineDatas().get(i).vol, i));
+            candleEntries.add(new CandleEntry(i, mData.getKLineDatas().get(i).high, mData.getKLineDatas().get(i).low, mData.getKLineDatas().get(i).open, mData.getKLineDatas().get(i).close));
+            if (i >= 4) {
+                sum = 0;
+                line5Entries.add(new Entry(getSum(i - 4, i, mData) / 5, i));
+            }
+            if (i >= 9) {
+                sum = 0;
+                line10Entries.add(new Entry(getSum(i - 9, i, mData) / 10, i));
+            }
+            if (i >= 29) {
+                sum = 0;
+                line30Entries.add(new Entry(getSum(i - 29, i, mData) / 30, i));
+            }
+
+        }
+        BarDataSet barDataSet = new BarDataSet(barEntries, "成交量");
+        barDataSet.setBarSpacePercent(50); //bar空隙
+        barDataSet.setHighlightEnabled(true);
+        barDataSet.setHighLightAlpha(255);
+        barDataSet.setHighLightColor(Color.WHITE);
+        barDataSet.setDrawValues(false);
+        barDataSet.setColor(Color.RED);
+        BarData barData = new BarData(xVals, barDataSet);
+        barChart.setData(barData);
+        final ViewPortHandler viewPortHandlerBar = barChart.getViewPortHandler();
+        viewPortHandlerBar.setMaximumScaleX(culcMaxscale(xVals.size()));
+        Matrix touchmatrix = viewPortHandlerBar.getMatrixTouch();
+        final float xscale = 3;
+        touchmatrix.postScale(xscale, 1f);
+
+
+        CandleDataSet candleDataSet = new CandleDataSet(candleEntries, "KLine");
+     /*   candleDataSet.setDrawHorizontalHighlightIndicator(false);
+        candleDataSet.setHighlightEnabled(true);
+        candleDataSet.setHighLightColor(Color.WHITE);
+        candleDataSet.setValueTextSize(10f);
+        candleDataSet.setDrawValues(false);
+        candleDataSet.setColor(Color.RED);
+        candleDataSet.setShadowWidth(1f);
+        candleDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+
+
+*/
+
+
+        candleDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        candleDataSet.setShadowColor(Color.DKGRAY);//影线颜色
+        candleDataSet.setShadowColorSameAsCandle(true);//影线颜色与实体一致
+        candleDataSet.setShadowWidth(0.7f);//影线
+        candleDataSet.setDecreasingColor(Color.RED);
+        candleDataSet.setDecreasingPaintStyle(Paint.Style.FILL);//红涨，实体
+        candleDataSet.setIncreasingColor(Color.GREEN);
+        candleDataSet.setIncreasingPaintStyle(Paint.Style.STROKE);//绿跌，空心
+        candleDataSet.setNeutralColor(Color.RED);//当天价格不涨不跌（一字线）颜色
+        candleDataSet.setHighlightLineWidth(1f);//选中蜡烛时的线宽
+        candleDataSet.setDrawValues(false);//在图表中的元素上面是否显示数值
+
+
+        CandleData candleData = new CandleData(xVals, candleDataSet);
+
+
+        ArrayList<ILineDataSet> sets = new ArrayList<>();
+        sets.add(setMaLine(5, xVals, line5Entries));
+        sets.add(setMaLine(10, xVals, line10Entries));
+        sets.add(setMaLine(30, xVals, line30Entries));
+
+
+        CombinedData combinedData = new CombinedData(xVals);
+        LineData lineData = new LineData(xVals, sets);
+        combinedData.setData(candleData);
+        combinedData.setData(lineData);
+        this.setData(combinedData);
+        this.moveViewToX(mData.getKLineDatas().size() - 1);
+        final ViewPortHandler viewPortHandlerCombin = this.getViewPortHandler();
+        viewPortHandlerCombin.setMaximumScaleX(culcMaxscale(xVals.size()));
+        Matrix matrixCombin = viewPortHandlerCombin.getMatrixTouch();
+        final float xscaleCombin = 3;
+        matrixCombin.postScale(xscaleCombin, 1f);
+
+        this.moveViewToX(mData.getKLineDatas().size() - 1);
+        barChart.moveViewToX(mData.getKLineDatas().size() - 1);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       /* barChart.setDrawBorders(true);
+        barChart.setBorderWidth(1f);
+        barChart.setBorderColor(getResources().getColor(R.color.minute_grayLine));
+//bar x y轴
+        XAxis xAxisBar = barChart.getXAxis();
+        xAxisBar.setDrawLabels(true);
+        xAxisBar.setDrawGridLines(false);
+        xAxisBar.setDrawAxisLine(false);
+        xAxisBar.setTextColor(getResources().getColor(R.color.minute_zhoutv));
+        xAxisBar.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxisBar.setGridColor(getResources().getColor(R.color.minute_grayLine));
+
+
+        YAxis axisLeftBar = barChart.getAxisLeft();
+        axisLeftBar.setAxisMinValue(0);
+        axisLeftBar.setDrawGridLines(false);
+        axisLeftBar.setDrawAxisLine(false);
+        axisLeftBar.setTextColor(getResources().getColor(R.color.minute_zhoutv));
+        axisLeftBar.setDrawLabels(true);
+        axisLeftBar.setSpaceTop(0);
+        axisLeftBar.setShowOnlyMinMax(true);
+
+
+        YAxis axisRightBar = barChart.getAxisRight();
+        axisRightBar.setDrawLabels(false);
+        axisRightBar.setDrawGridLines(false);
+        axisRightBar.setDrawAxisLine(false);
+
+
+        this.setGridBackgroundColor(Color.BLACK);
+
+
+        this.setDrawBorders(true);
+        this.setBorderWidth(1);
+        this.setBorderColor(getResources().getColor(R.color.minute_grayLine));
+        this.setDescription("");
+        this.setDragEnabled(true);
+        this.setScaleYEnabled(true);
+
+        Legend combinedchartLegend = this.getLegend();
+        combinedchartLegend.setEnabled(false);
 
 
 //bar x y轴
-        xAxisK = this.getXAxis();
+        XAxis xAxisK = this.getXAxis();
         xAxisK.setDrawLabels(true);
         xAxisK.setDrawGridLines(false);
         xAxisK.setDrawAxisLine(false);
@@ -120,17 +365,205 @@ public class MaloCombinedChart extends CombinedChart implements OnChartValueSele
         xAxisK.setGridColor(getResources().getColor(R.color.minute_grayLine));
 
 
-        axisLeftK = this.getAxisLeft();
+        YAxis axisLeftK = this.getAxisLeft();
+        axisLeftK.setLabelCount(7, false);
         axisLeftK.setDrawGridLines(true);
         axisLeftK.setDrawAxisLine(false);
         axisLeftK.setDrawLabels(true);
+        axisLeftK.setShowOnlyMinMax(false);
         axisLeftK.setTextColor(getResources().getColor(R.color.minute_zhoutv));
         axisLeftK.setGridColor(getResources().getColor(R.color.minute_grayLine));
         axisLeftK.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+
+
+        axisLeftK.setEnabled(true);
+
+
+        YAxis axisRightK = this.getAxisRight();
+        axisRightK.setDrawLabels(false);
+        axisRightK.setDrawGridLines(true);
+        axisRightK.setDrawAxisLine(false);
+        axisRightK.setGridColor(getResources().getColor(R.color.minute_grayLine));
+
+      *//*  // get the legend (only possible after setting data)
+        Legend l = this.getLegend();  // 设置比例图标示
+        l.setPosition(Legend.LegendPosition.BELOW_CHART_RIGHT);  //显示位置
+        l.setForm(Legend.LegendForm.SQUARE);// 样式
+        l.setFormSize(6f);// 字号
+        l.setTextColor(Color.WHITE);// 颜色
+        //l.setTypeface(mTf);// 字体
+
+        List<String> labels=new ArrayList<>();
+        labels.add("红涨");
+        labels.add("绿跌");
+        List<Integer> colors=new ArrayList<>();
+        colors.add(Color.RED);
+        colors.add(Color.GREEN);
+        l.setExtra(colors,labels);//设置标注的颜色及内容，设置的效果如下图
+
+        l.setEnabled(false);//决定显不显示标签
+
+
+*//*
+
+
+        kLineDatas = mData.getKLineDatas();
+        axisLeftBar.setAxisMaxValue(mData.getVolmax());
+        String unit = MyUtils.getVolUnit(mData.getVolmax());
+        int u = 1;
+        if ("万手".equals(unit)) {
+            u = 4;
+        } else if ("亿手".equals(unit)) {
+            u = 8;
+        }
+        axisLeftBar.setValueFormatter(new VolFormatter((int) Math.pow(10, u)));
+        axisRightBar.setAxisMaxValue(mData.getVolmax());
+        Log.e("@@@", mData.getVolmax() + "da");
+
+        ArrayList<String> xVals = new ArrayList<>();
+        ArrayList<BarEntry> barEntries = new ArrayList<>();
+        ArrayList<CandleEntry> candleEntries = new ArrayList<>();
+        ArrayList<Entry> line5Entries = new ArrayList<>();
+        ArrayList<Entry> line10Entries = new ArrayList<>();
+        ArrayList<Entry> line30Entries = new ArrayList<>();
+        for (int i = 0, j = 0; i < mData.getKLineDatas().size(); i++, j++) {
+            xVals.add(mData.getKLineDatas().get(i).date + "");
+            barEntries.add(new BarEntry(mData.getKLineDatas().get(i).vol, i));
+            candleEntries.add(new CandleEntry(i, mData.getKLineDatas().get(i).high, mData.getKLineDatas().get(i).low, mData.getKLineDatas().get(i).open, mData.getKLineDatas().get(i).close));
+            if (i >= 4) {
+                sum = 0;
+                line5Entries.add(new Entry(getSum(i - 4, i, mData) / 5, i));
+            }
+            if (i >= 9) {
+                sum = 0;
+                line10Entries.add(new Entry(getSum(i - 9, i, mData) / 10, i));
+            }
+            if (i >= 29) {
+                sum = 0;
+                line30Entries.add(new Entry(getSum(i - 29, i, mData) / 30, i));
+            }
+
+        }
+        BarDataSet barDataSet = new BarDataSet(barEntries, "成交量");
+        barDataSet.setBarSpacePercent(50); //bar空隙
+        barDataSet.setHighlightEnabled(true);
+        barDataSet.setHighLightAlpha(255);
+        barDataSet.setHighLightColor(Color.WHITE);
+        barDataSet.setDrawValues(false);
+        barDataSet.setColor(Color.RED);
+        BarData barData = new BarData(xVals, barDataSet);
+        barChart.setData(barData);
+        final ViewPortHandler viewPortHandlerBar = barChart.getViewPortHandler();
+        viewPortHandlerBar.setMaximumScaleX(culcMaxscale(xVals.size()));
+        Matrix touchmatrix = viewPortHandlerBar.getMatrixTouch();
+        final float xscale = 3;
+        touchmatrix.postScale(xscale, 1f);
+
+
+        CandleDataSet candleDataSet = new CandleDataSet(candleEntries, "KLine");
+     *//*   candleDataSet.setDrawHorizontalHighlightIndicator(false);
+        candleDataSet.setHighlightEnabled(true);
+        candleDataSet.setHighLightColor(Color.WHITE);
+        candleDataSet.setValueTextSize(10f);
+        candleDataSet.setDrawValues(false);
+        candleDataSet.setColor(Color.RED);
+        candleDataSet.setShadowWidth(1f);
+        candleDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+
+
+*//*
+
+
+        candleDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        candleDataSet.setShadowColor(Color.DKGRAY);//影线颜色
+        candleDataSet.setShadowColorSameAsCandle(true);//影线颜色与实体一致
+        candleDataSet.setShadowWidth(0.7f);//影线
+        candleDataSet.setDecreasingColor(Color.RED);
+        candleDataSet.setDecreasingPaintStyle(Paint.Style.FILL);//红涨，实体
+        candleDataSet.setIncreasingColor(Color.GREEN);
+        candleDataSet.setIncreasingPaintStyle(Paint.Style.STROKE);//绿跌，空心
+        candleDataSet.setNeutralColor(Color.RED);//当天价格不涨不跌（一字线）颜色
+        candleDataSet.setHighlightLineWidth(1f);//选中蜡烛时的线宽
+        candleDataSet.setDrawValues(false);//在图表中的元素上面是否显示数值
+
+
+        CandleData candleData = new CandleData(xVals, candleDataSet);
+
+
+        ArrayList<ILineDataSet> sets = new ArrayList<>();
+        sets.add(setMaLine(5, xVals, line5Entries));
+        sets.add(setMaLine(10, xVals, line10Entries));
+        sets.add(setMaLine(30, xVals, line30Entries));
+
+
+        CombinedData combinedData = new CombinedData(xVals);
+        LineData lineData = new LineData(xVals, sets);
+        combinedData.setData(candleData);
+        combinedData.setData(lineData);
+        this.setData(combinedData);
+        this.moveViewToX(mData.getKLineDatas().size() - 1);
+        final ViewPortHandler viewPortHandlerCombin = this.getViewPortHandler();
+        viewPortHandlerCombin.setMaximumScaleX(culcMaxscale(xVals.size()));
+        Matrix matrixCombin = viewPortHandlerCombin.getMatrixTouch();
+        final float xscaleCombin = 3;
+        matrixCombin.postScale(xscaleCombin, 1f);
+
+        this.moveViewToX(mData.getKLineDatas().size() - 1);
+        barChart.moveViewToX(mData.getKLineDatas().size() - 1);*/
+        setOffset();
+
+/****************************************************************************************
+ 此处解决方法来源于CombinedChartDemo，k线图y轴显示问题，图表滑动后才能对齐的bug，希望有人给出解决方法
+ (注：此bug现已修复，感谢和chenguang79一起研究)
+ ****************************************************************************************/
+
+        handler.sendEmptyMessageDelayed(0, 300);
+    }
+
+
+    public void setData(DataParse mData) {
+
+
+        this.setGridBackgroundColor(Color.BLACK);
+
+
+        this.setDrawBorders(true);
+        this.setBorderWidth(1);
+        this.setBorderColor(getResources().getColor(R.color.minute_grayLine));
+        this.setDescription("");
+        this.setDragEnabled(true);
+        this.setScaleYEnabled(true);
+
+        Legend combinedchartLegend = this.getLegend();
+        combinedchartLegend.setEnabled(false);
+
+
+//bar x y轴
+        XAxis xAxisK = this.getXAxis();
+        xAxisK.setDrawLabels(true);
+        xAxisK.setDrawGridLines(false);
+        xAxisK.setDrawAxisLine(false);
+        // xAxisK.setSpaceBetweenLabels(12);//轴刻度间的宽度，默认值是4
+        xAxisK.setTextColor(getResources().getColor(R.color.minute_zhoutv));
+        xAxisK.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxisK.setGridColor(getResources().getColor(R.color.minute_grayLine));
+
+
+        YAxis axisLeftK = this.getAxisLeft();
         axisLeftK.setLabelCount(7, false);
+        axisLeftK.setDrawGridLines(true);
+        axisLeftK.setDrawAxisLine(false);
+        axisLeftK.setDrawLabels(true);
+        axisLeftK.setShowOnlyMinMax(false);
+        axisLeftK.setTextColor(getResources().getColor(R.color.minute_zhoutv));
+        axisLeftK.setGridColor(getResources().getColor(R.color.minute_grayLine));
+        axisLeftK.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
 
 
-        axisRightK = this.getAxisRight();
+        axisLeftK.setEnabled(true);
+
+
+        YAxis axisRightK = this.getAxisRight();
         axisRightK.setDrawLabels(false);
         axisRightK.setDrawGridLines(true);
         axisRightK.setDrawAxisLine(false);
@@ -244,15 +677,22 @@ public class MaloCombinedChart extends CombinedChart implements OnChartValueSele
 
 
         this.moveViewToX(mData.getKLineDatas().size() - 1);
-        //setOffset();
+        setOffset();
 
 /****************************************************************************************
  此处解决方法来源于CombinedChartDemo，k线图y轴显示问题，图表滑动后才能对齐的bug，希望有人给出解决方法
  (注：此bug现已修复，感谢和chenguang79一起研究)
  ****************************************************************************************/
 
-       // handler.sendEmptyMessageDelayed(0, 300);
+        // handler.sendEmptyMessageDelayed(0, 300);
 
+       /* this.setAutoScaleMinMaxEnabled(true);
+
+        this.notifyDataSetChanged();
+
+
+        this.invalidate();*/
+        handler.sendEmptyMessageDelayed(0, 300);
     }
 
     private float getSum(Integer a, Integer b, DataParse mData) {
@@ -302,6 +742,12 @@ public class MaloCombinedChart extends CombinedChart implements OnChartValueSele
 
     /*设置量表对齐*/
     private void setOffset() {
+
+        if (barChart == null) {
+            return;
+        }
+
+
         float lineLeft = this.getViewPortHandler().offsetLeft();
         float barLeft = barChart.getViewPortHandler().offsetLeft();
         float lineRight = this.getViewPortHandler().offsetRight();
@@ -330,6 +776,11 @@ public class MaloCombinedChart extends CombinedChart implements OnChartValueSele
             transRight = barRight;
         }
         barChart.setViewPortOffsets(transLeft, 15, transRight, barBottom);
+
+
+
+
+
     }
 
     @Override
@@ -339,4 +790,19 @@ public class MaloCombinedChart extends CombinedChart implements OnChartValueSele
 
         return true;
     }
+
+    private Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            barChart.setAutoScaleMinMaxEnabled(true);
+            MaloCombinedChart.this.setAutoScaleMinMaxEnabled(true);
+
+            MaloCombinedChart.this.notifyDataSetChanged();
+            barChart.notifyDataSetChanged();
+
+            MaloCombinedChart.this.invalidate();
+            barChart.invalidate();
+
+        }
+    };
 }

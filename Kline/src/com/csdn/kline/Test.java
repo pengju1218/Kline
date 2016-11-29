@@ -2,6 +2,8 @@ package com.csdn.kline;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 
 import com.csdn.kline.listener.CoupleChartGestureListener;
 import com.csdn.kline.util.ConstantTest;
@@ -49,9 +51,14 @@ public class Test extends Activity {
         this.combinedchart = (MaloCombinedChart) findViewById(R.id.combinedchart);
 
         getOffLineData();
-        barchart.setData(mData);
-        barchart.setCombinedChart(combinedchart);
-        combinedchart.setData(mData);
+       // barchart.setData(mData);
+        //mbinedchart.setBarChart(barchart);
+        combinedchart.setAllData(mData,barchart);
+
+       // setOffset();
+
+
+
         CoupleChartGestureListener seltect = new CoupleChartGestureListener(combinedchart, new Chart[]{barchart});
 
         CoupleChartGestureListener seltect2 = new CoupleChartGestureListener(barchart, new Chart[]{combinedchart});
@@ -61,7 +68,6 @@ public class Test extends Activity {
         // 将交易量控件的滑动事件传递给K线控件
         barchart.setOnChartGestureListener(seltect2);
 
-        setOffset();
 
 
 
@@ -111,6 +117,22 @@ public class Test extends Activity {
             transRight = barRight;
         }
         barchart.setViewPortOffsets(transLeft, 15, transRight, barBottom);
+        handler.sendEmptyMessageDelayed(0, 300);
     }
+
+    private Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            barchart.setAutoScaleMinMaxEnabled(true);
+            combinedchart.setAutoScaleMinMaxEnabled(true);
+
+            combinedchart.notifyDataSetChanged();
+            barchart.notifyDataSetChanged();
+
+            combinedchart.invalidate();
+            barchart.invalidate();
+
+        }
+    };
 
 }
