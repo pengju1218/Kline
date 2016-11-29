@@ -62,5 +62,5 @@ dependencies {
     // compile 'com.android.support:appcompat-v7:22.2.0'
     //compile project(':vitamio')
     //compile 'com.github.PhilJay:MPAndroidChart:v3.0.0'
-    compile(name: 'MPChartLib-release', ext: 'aar')
+    //compile(name: 'MPChartLib-release', ext: 'aar')
 }
